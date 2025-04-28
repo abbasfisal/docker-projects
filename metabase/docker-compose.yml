@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  metabase:
+    image: docker.arvancloud.ir/metabase/metabase:v0.53.12.x
+
+    container_name: metabase
+    hostname: metabase
+    volumes:
+      - /dev/urandom:/dev/random:ro
+    ports:
+      - 3000:3000
+    environment:
+      MB_DB_TYPE: mysql       # تغییر از postgres به mysql
+      MB_DB_DBNAME: metabase_test    # نام دیتابیس شما در MariaDB
+      MB_DB_PORT: 3306        # پورت پیشفرض MariaDB/MySQL
+      MB_DB_USER: root        # یا کاربری که دسترسی دارد
+      MB_DB_PASS: password    # رمز عبور کاربر
+      MB_DB_HOST: host.docker.internal  # اتصال به MariaDB لوکال
+    networks:
+      - metanet1
+    healthcheck:
+      test: curl --fail -I http://localhost:3000/api/health || exit 1
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+networks:
+  metanet1:
+    driver: bridge
+
+

@@ -1,0 +1,41 @@
+
+
+services:
+  elasticsearch:
+    image: docker.arvancloud.ir/elasticsearch:7.16.3
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+
+  kibana:
+    image: docker.arvancloud.ir/kibana:7.16.3
+    container_name: kibana
+    depends_on:
+      - elasticsearch
+    environment:
+      ELASTICSEARCH_HOSTS: "http://elasticsearch:9200"
+    ports:
+      - "5601:5601"
+
+  filebeat:
+    image: docker.arvancloud.ir/elastic/filebeat:7.16.3
+    container_name: filebeat
+    depends_on:
+      - elasticsearch
+    user: root
+    volumes:
+      - ./filebeat.yml:/usr/share/filebeat/filebeat.yml
+      - ./logs:/logs
+      - /path/to/your/laravel-project/storage/logs:/var/log/laravel:ro
+      - /path/to/your/golang-project/logs:/var/log/golang:ro
+    environment:
+      - ELASTICSEARCH_HOST=http://elasticsearch:9200
+    entrypoint: ["filebeat", "-e", "-strict.perms=false"]
