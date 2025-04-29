@@ -1,12 +1,17 @@
 version: '3.8'
 
 services:
-  # سرور k3s (control-plane + single node)
+  # سرویس اولیه برای ساخت فایل kubeconfig
+  init-kubeconfig:
+    image: busybox
+    volumes:
+      - ./output:/output
+    entrypoint: ["sh", "-c", "mkdir -p /output && touch /output/kubeconfig.yaml"]
+
+  # سرور k3s
   k3s-server:
     image: docker.arvancloud.ir/rancher/k3s:v1.30.12-rc1-k3s1
-
     privileged: true
-    command: server --disable-agent
     environment:
       - K3S_KUBECONFIG_OUTPUT=/output/kubeconfig.yaml
       - K3S_KUBECONFIG_MODE=644
@@ -14,19 +19,18 @@ services:
       - k3s-data:/var/lib/rancher/k3s
       - ./output:/output
     ports:
-      - "6443:6443"     # API سرور
+      - "6443:6443"
+    depends_on:
+      - init-kubeconfig
 
-  # کلاینت kubectl هماهنگ با نسخه سرور
+  # کلاینت kubectl
   kubectl:
     image: docker.arvancloud.ir/bitnami/kubectl:1.30.7-debian-12-r1
-
     depends_on:
       - k3s-server
     volumes:
       - ./output/kubeconfig.yaml:/root/.kube/config:ro
     entrypoint: ["tail", "-f", "/dev/null"]
-    # برای اجرای دستورات:
-    # docker-compose run --rm kubectl kubectl get nodes
 
 volumes:
   k3s-data:
